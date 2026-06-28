@@ -10,17 +10,21 @@ TAG = "Roswell_SS"
 
 PAGE = 1
 
-URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
+BASE = "https://rule34.paheal.net"
+
+URL = f"{BASE}/post/list/{TAG}/{PAGE}"
 
 
-# ======================
-# REQUEST
-# ======================
 
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
+
+
+# ======================
+# GET LIST POST
+# ======================
 
 r = requests.get(
     URL,
@@ -32,17 +36,6 @@ r = requests.get(
 print("Status:", r.status_code)
 
 
-if r.status_code != 200:
-
-    raise Exception(
-        "Tidak bisa membuka Rule34 Paheal"
-    )
-
-
-
-# ======================
-# PARSE
-# ======================
 
 soup = BeautifulSoup(
     r.text,
@@ -50,22 +43,76 @@ soup = BeautifulSoup(
 )
 
 
+
+post_links = []
+
+
+
+for a in soup.find_all("a"):
+
+    href = a.get("href")
+
+
+    if href and "/post/view/" in href:
+
+
+        if href.startswith("/"):
+
+            href = BASE + href
+
+
+        post_links.append(href)
+
+
+
+post_links = list(dict.fromkeys(post_links))
+
+
+
+print(
+    "Post ditemukan:",
+    len(post_links)
+)
+
+
+
+# ======================
+# AMBIL GAMBAR ASLI
+# ======================
+
 images = []
 
 
 
-# Paheal menyimpan gambar di tag img
-
-for img in soup.find_all("img"):
+for link in post_links:
 
 
-    src = img.get("src")
+    page = requests.get(
+        link,
+        headers=headers,
+        timeout=30
+    )
 
 
-    if src:
+    detail = BeautifulSoup(
+        page.text,
+        "html.parser"
+    )
 
 
-        if "images" in src or "rule34" in src:
+    img = detail.find(
+        "img",
+        id="main_image"
+    )
+
+
+    if img:
+
+
+        src = img.get("src")
+
+
+        if src:
 
 
             if src.startswith("//"):
@@ -77,14 +124,8 @@ for img in soup.find_all("img"):
 
 
 
-# hapus duplikat
-
-images = list(dict.fromkeys(images))
-
-
-
 print(
-    "Jumlah gambar:",
+    "Gambar asli:",
     len(images)
 )
 
@@ -94,7 +135,8 @@ print(
 # README
 # ======================
 
-readme = f"""
+
+content = f"""
 
 # 🎨 Rule34 Gallery
 
@@ -113,15 +155,15 @@ Tag:
 for img in images:
 
 
-    readme += f"""
+    content += f"""
 
-<img src="{img}" width="200">
+<img src="{img}" width="220">
 
 """
 
 
 
-readme += """
+content += """
 
 </div>
 
@@ -135,10 +177,10 @@ with open(
     encoding="utf-8"
 ) as f:
 
-    f.write(readme)
+    f.write(content)
 
 
 
 print(
-    "README selesai"
+    "README updated"
 )
