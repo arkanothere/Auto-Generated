@@ -22,52 +22,48 @@ headers = {
 
 
 # ======================
-# GET PAGE
+# OPEN TAG PAGE
 # ======================
 
-response = requests.get(
+r = requests.get(
     URL,
     headers=headers,
     timeout=30
 )
 
 
-print("Status:", response.status_code)
+print("Status:", r.status_code)
 
 
-
-if response.status_code != 200:
-    raise Exception("Halaman gagal dibuka")
+if r.status_code != 200:
+    raise Exception("Gagal membuka halaman")
 
 
 
 soup = BeautifulSoup(
-    response.text,
+    r.text,
     "html.parser"
 )
 
 
 
 # ======================
-# ONLY POST LINKS
+# ONLY POST THUMBNAILS
 # ======================
 
 post_links = []
 
 
-for a in soup.find_all("a"):
+
+# ambil hanya thumbnail area
+
+for thumb in soup.select(".shm-thumb a"):
 
 
-    href = a.get("href")
+    href = thumb.get("href")
 
 
-    if not href:
-        continue
-
-
-
-    # hanya post halaman
-    if "/post/view/" in href:
+    if href:
 
 
         if href.startswith("/"):
@@ -79,8 +75,6 @@ for a in soup.find_all("a"):
 
 
 
-# hapus duplikat
-
 post_links = list(
     dict.fromkeys(post_links)
 )
@@ -88,17 +82,19 @@ post_links = list(
 
 
 print(
-    "Post ditemukan:",
+    "Post halaman:",
     len(post_links)
 )
 
 
 
 # ======================
-# GET IMAGE
+# GET ORIGINAL IMAGE
 # ======================
 
+
 images = []
+
 
 
 for link in post_links:
@@ -106,24 +102,23 @@ for link in post_links:
 
     try:
 
-        r = requests.get(
+
+        page = requests.get(
             link,
             headers=headers,
             timeout=20
         )
 
 
-        page = BeautifulSoup(
-            r.text,
+        detail = BeautifulSoup(
+            page.text,
             "html.parser"
         )
 
 
 
-        # ambil gambar utama
-        img = page.find(
-            "img",
-            id="main_image"
+        img = detail.select_one(
+            "#main_image"
         )
 
 
@@ -134,29 +129,23 @@ for link in post_links:
             src = img.get("src")
 
 
-            if src:
+            if src.startswith("//"):
+
+                src = "https:" + src
 
 
-                if src.startswith("//"):
-
-                    src = "https:" + src
-
-
-                images.append(src)
+            images.append(src)
 
 
 
-    except Exception as e:
+    except:
 
-        print(
-            "Skip:",
-            link
-        )
+        pass
 
 
 
 print(
-    "Gambar ditemukan:",
+    "Gambar asli:",
     len(images)
 )
 
@@ -166,7 +155,8 @@ print(
 # README
 # ======================
 
-content = f"""
+
+readme = f"""
 
 # 🎨 Rule34 Gallery
 
@@ -181,10 +171,11 @@ Tag:
 """
 
 
+
 for img in images:
 
 
-    content += f"""
+    readme += f"""
 
 <img src="{img}" width="220">
 
@@ -192,7 +183,7 @@ for img in images:
 
 
 
-content += """
+readme += """
 
 </div>
 
@@ -206,10 +197,10 @@ with open(
     encoding="utf-8"
 ) as f:
 
-    f.write(content)
+    f.write(readme)
 
 
 
 print(
-    "README updated"
+    "README selesai"
 )
