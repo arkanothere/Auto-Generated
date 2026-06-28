@@ -1,91 +1,93 @@
 import requests
-
 from bs4 import BeautifulSoup
-
 
 
 # ======================
 # SETTINGS
 # ======================
 
-
 TAG = "Roswell_SS"
 
 PAGE = 1
 
-
 URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
-
 
 
 # ======================
 # REQUEST
 # ======================
 
-
 headers = {
-
-    "User-Agent":
-    "Mozilla/5.0 github-actions-gallery"
-
+    "User-Agent": "Mozilla/5.0"
 }
 
 
-
 response = requests.get(
-
     URL,
-
     headers=headers,
-
     timeout=30
-
 )
 
+
+print("Status:", response.status_code)
 
 
 if response.status_code != 200:
 
     raise Exception(
-        f"Failed {response.status_code}"
+        "Website tidak bisa diakses"
     )
 
 
 
 # ======================
-# PARSE HTML
+# PARSE
 # ======================
 
-
 soup = BeautifulSoup(
-
     response.text,
-
     "html.parser"
-
 )
-
 
 
 images = []
 
 
 
-for img in soup.find_all("img"):
+# ambil semua link gambar
+
+for a in soup.find_all("a"):
 
 
-    src = img.get("src")
+    href = a.get("href")
 
 
-    if src and "sample" in src:
+    if href:
 
 
-        if src.startswith("//"):
+        if href.endswith(
+            (".jpg", ".jpeg", ".png", ".webp")
+        ):
 
-            src = "https:" + src
+
+            if href.startswith("//"):
+
+                href = "https:" + href
 
 
-        images.append(src)
+            images.append(href)
+
+
+
+# ======================
+# DEBUG
+# ======================
+
+
+print(
+    "Jumlah gambar:",
+    len(images)
+)
 
 
 
@@ -94,7 +96,7 @@ for img in soup.find_all("img"):
 # ======================
 
 
-readme = f"""
+content = f"""
 
 # 🎨 Rule34 Gallery
 
@@ -104,32 +106,24 @@ Tag:
 `{TAG}`
 
 
-
-Automatically updated.
-
-
-
 <div align="center">
 
+"""
+
+
+for img in images:
+
+
+    content += f"""
+
+<img src="{img}" width="200">
+
 
 """
 
 
 
-for image in images:
-
-
-    readme += f"""
-
-
-<img src="{image}" width="200">
-
-
-"""
-
-
-
-readme += """
+content += """
 
 </div>
 
@@ -138,22 +132,14 @@ readme += """
 
 
 with open(
-
     "README.md",
-
     "w",
-
     encoding="utf-8"
-
-) as file:
-
-
-    file.write(readme)
+) as f:
 
 
+    f.write(content)
 
-print(
 
-    f"Updated {len(images)} images"
 
-)
+print("README updated")
