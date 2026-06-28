@@ -8,13 +8,7 @@ Tag:
 `Roswell_SS`
 
 
-
-Automatically updated.
-
-
-
 <div align="center">
-
 
 
 
