@@ -1,5 +1,5 @@
 import requests
-import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
 
 
 # ======================
@@ -8,14 +8,9 @@ import xml.etree.ElementTree as ET
 
 TAG = "Roswell_SS"
 
-LIMIT = 100
+PAGE = 1
 
-
-API = (
-    "https://rule34.paheal.net/api/danbooru/"
-    f"?page=dapi&s=post&q=index&tags={TAG}&limit={LIMIT}"
-)
-
+URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
 
 
 # ======================
@@ -23,38 +18,35 @@ API = (
 # ======================
 
 headers = {
-
-    "User-Agent":
-    "Mozilla/5.0 github-actions-gallery"
-
+    "User-Agent": "Mozilla/5.0"
 }
 
 
-response = requests.get(
-    API,
+r = requests.get(
+    URL,
     headers=headers,
     timeout=30
 )
 
 
-print("Status:", response.status_code)
+print("Status:", r.status_code)
 
 
-if response.status_code != 200:
+if r.status_code != 200:
 
     raise Exception(
-        "API gagal"
+        "Tidak bisa membuka Rule34 Paheal"
     )
 
 
 
 # ======================
-# XML PARSE
+# PARSE
 # ======================
 
-
-root = ET.fromstring(
-    response.text
+soup = BeautifulSoup(
+    r.text,
+    "html.parser"
 )
 
 
@@ -62,17 +54,32 @@ images = []
 
 
 
-for post in root.findall("post"):
+# Paheal menyimpan gambar di tag img
+
+for img in soup.find_all("img"):
 
 
-    file_url = post.attrib.get(
-        "file_url"
-    )
+    src = img.get("src")
 
 
-    if file_url:
+    if src:
 
-        images.append(file_url)
+
+        if "images" in src or "rule34" in src:
+
+
+            if src.startswith("//"):
+
+                src = "https:" + src
+
+
+            images.append(src)
+
+
+
+# hapus duplikat
+
+images = list(dict.fromkeys(images))
 
 
 
@@ -84,9 +91,8 @@ print(
 
 
 # ======================
-# CREATE README
+# README
 # ======================
-
 
 readme = f"""
 
@@ -98,11 +104,10 @@ Tag:
 `{TAG}`
 
 
-
 <div align="center">
 
-
 """
+
 
 
 for img in images:
@@ -111,7 +116,6 @@ for img in images:
     readme += f"""
 
 <img src="{img}" width="200">
-
 
 """
 
@@ -131,11 +135,10 @@ with open(
     encoding="utf-8"
 ) as f:
 
-
     f.write(readme)
 
 
 
 print(
-    "README berhasil dibuat"
+    "README selesai"
 )
