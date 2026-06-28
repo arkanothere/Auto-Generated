@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 
 
 # ======================
@@ -8,9 +8,14 @@ from bs4 import BeautifulSoup
 
 TAG = "Roswell_SS"
 
-PAGE = 1
+LIMIT = 100
 
-URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
+
+API = (
+    "https://rule34.paheal.net/api/danbooru/"
+    f"?page=dapi&s=post&q=index&tags={TAG}&limit={LIMIT}"
+)
+
 
 
 # ======================
@@ -18,12 +23,15 @@ URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
 # ======================
 
 headers = {
-    "User-Agent": "Mozilla/5.0"
+
+    "User-Agent":
+    "Mozilla/5.0 github-actions-gallery"
+
 }
 
 
 response = requests.get(
-    URL,
+    API,
     headers=headers,
     timeout=30
 )
@@ -35,18 +43,18 @@ print("Status:", response.status_code)
 if response.status_code != 200:
 
     raise Exception(
-        "Website tidak bisa diakses"
+        "API gagal"
     )
 
 
 
 # ======================
-# PARSE
+# XML PARSE
 # ======================
 
-soup = BeautifulSoup(
-    response.text,
-    "html.parser"
+
+root = ET.fromstring(
+    response.text
 )
 
 
@@ -54,34 +62,18 @@ images = []
 
 
 
-# ambil semua link gambar
-
-for a in soup.find_all("a"):
+for post in root.findall("post"):
 
 
-    href = a.get("href")
+    file_url = post.attrib.get(
+        "file_url"
+    )
 
 
-    if href:
+    if file_url:
 
+        images.append(file_url)
 
-        if href.endswith(
-            (".jpg", ".jpeg", ".png", ".webp")
-        ):
-
-
-            if href.startswith("//"):
-
-                href = "https:" + href
-
-
-            images.append(href)
-
-
-
-# ======================
-# DEBUG
-# ======================
 
 
 print(
@@ -92,11 +84,11 @@ print(
 
 
 # ======================
-# README
+# CREATE README
 # ======================
 
 
-content = f"""
+readme = f"""
 
 # 🎨 Rule34 Gallery
 
@@ -106,7 +98,9 @@ Tag:
 `{TAG}`
 
 
+
 <div align="center">
+
 
 """
 
@@ -114,7 +108,7 @@ Tag:
 for img in images:
 
 
-    content += f"""
+    readme += f"""
 
 <img src="{img}" width="200">
 
@@ -123,7 +117,7 @@ for img in images:
 
 
 
-content += """
+readme += """
 
 </div>
 
@@ -138,8 +132,10 @@ with open(
 ) as f:
 
 
-    f.write(content)
+    f.write(readme)
 
 
 
-print("README updated")
+print(
+    "README berhasil dibuat"
+)
