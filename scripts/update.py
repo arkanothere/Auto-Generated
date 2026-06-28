@@ -1,64 +1,84 @@
 import requests
+
 from bs4 import BeautifulSoup
+
 
 
 # ======================
 # SETTINGS
 # ======================
 
+
 TAG = "Roswell_SS"
 
 PAGE = 1
+
 
 URL = f"https://rule34.paheal.net/post/list/{TAG}/{PAGE}"
 
 
 
+# ======================
+# REQUEST
+# ======================
+
+
 headers = {
-    "User-Agent": "Mozilla/5.0"
+
+    "User-Agent":
+    "Mozilla/5.0 github-actions-gallery"
+
 }
 
 
 
-# ======================
-# GET PAGE
-# ======================
-
 response = requests.get(
+
     URL,
+
     headers=headers,
+
     timeout=30
+
 )
+
 
 
 if response.status_code != 200:
 
     raise Exception(
-        f"Error {response.status_code}"
+        f"Failed {response.status_code}"
     )
 
 
 
+# ======================
+# PARSE HTML
+# ======================
+
+
 soup = BeautifulSoup(
+
     response.text,
+
     "html.parser"
+
 )
 
 
 
-# ======================
-# FIND IMAGES
-# ======================
-
 images = []
+
 
 
 for img in soup.find_all("img"):
 
+
     src = img.get("src")
 
 
-    if src and "preview" in src:
+    if src and "sample" in src:
+
 
         if src.startswith("//"):
 
@@ -69,53 +89,71 @@ for img in soup.find_all("img"):
 
 
 
-print(
-    "Images found:",
-    len(images)
-)
-
-
-
 # ======================
-# CREATE README
+# README
 # ======================
 
 
 readme = f"""
 
-# 🎨 Paheal Gallery
+# 🎨 Rule34 Gallery
+
 
 Tag:
 
 `{TAG}`
 
 
+
 Automatically updated.
+
+
+
+<div align="center">
 
 
 """
 
 
-for img in images:
+
+for image in images:
 
 
     readme += f"""
 
-<img src="{img}" width="250">
 
+<img src="{image}" width="200">
+
+
+"""
+
+
+
+readme += """
+
+</div>
 
 """
 
 
 
 with open(
+
     "README.md",
+
     "w",
+
     encoding="utf-8"
-) as f:
 
-    f.write(readme)
-
+) as file:
 
 
-print("README generated")
+    file.write(readme)
+
+
+
+print(
+
+    f"Updated {len(images)} images"
+
+)
