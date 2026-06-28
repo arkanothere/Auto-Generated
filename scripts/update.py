@@ -15,7 +15,6 @@ BASE = "https://rule34.paheal.net"
 URL = f"{BASE}/post/list/{TAG}/{PAGE}"
 
 
-
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
@@ -23,24 +22,45 @@ headers = {
 
 
 # ======================
-# GET LIST POST
+# GET LIST PAGE
 # ======================
 
-r = requests.get(
+response = requests.get(
     URL,
     headers=headers,
     timeout=30
 )
 
 
-print("Status:", r.status_code)
+print("Status:", response.status_code)
+
+
+if response.status_code != 200:
+    raise Exception("Gagal membuka halaman")
 
 
 
 soup = BeautifulSoup(
-    r.text,
+    response.text,
     "html.parser"
 )
+
+
+
+# ======================
+# ONLY MAIN POSTS
+# ======================
+
+post_area = soup.find(
+    id="posts"
+)
+
+
+if not post_area:
+
+    raise Exception(
+        "Container post tidak ditemukan"
+    )
 
 
 
@@ -48,7 +68,8 @@ post_links = []
 
 
 
-for a in soup.find_all("a"):
+for a in post_area.find_all("a"):
+
 
     href = a.get("href")
 
@@ -65,20 +86,25 @@ for a in soup.find_all("a"):
 
 
 
-post_links = list(dict.fromkeys(post_links))
+# hapus duplikat
+
+post_links = list(
+    dict.fromkeys(post_links)
+)
 
 
 
 print(
-    "Post ditemukan:",
+    "Post halaman:",
     len(post_links)
 )
 
 
 
 # ======================
-# AMBIL GAMBAR ASLI
+# GET ORIGINAL IMAGE
 # ======================
+
 
 images = []
 
@@ -87,7 +113,7 @@ images = []
 for link in post_links:
 
 
-    page = requests.get(
+    r = requests.get(
         link,
         headers=headers,
         timeout=30
@@ -95,7 +121,7 @@ for link in post_links:
 
 
     detail = BeautifulSoup(
-        page.text,
+        r.text,
         "html.parser"
     )
 
@@ -125,7 +151,7 @@ for link in post_links:
 
 
 print(
-    "Gambar asli:",
+    "Gambar:",
     len(images)
 )
 
@@ -136,7 +162,7 @@ print(
 # ======================
 
 
-content = f"""
+readme = f"""
 
 # 🎨 Rule34 Gallery
 
@@ -155,7 +181,7 @@ Tag:
 for img in images:
 
 
-    content += f"""
+    readme += f"""
 
 <img src="{img}" width="220">
 
@@ -163,7 +189,7 @@ for img in images:
 
 
 
-content += """
+readme += """
 
 </div>
 
@@ -177,10 +203,10 @@ with open(
     encoding="utf-8"
 ) as f:
 
-    f.write(content)
+    f.write(readme)
 
 
 
 print(
-    "README updated"
+    "README selesai"
 )
